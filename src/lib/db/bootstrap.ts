@@ -11,9 +11,9 @@ async function bootstrapOnce(): Promise<void> {
 }
 
 /**
- * Ensures schema + demo users exist before auth/UI reads the DB.
- * Runs on first request locally and on hosted cold starts so demo logins work
- * even when only migrations (not seed) ran at build time.
+ * Ensures schema + demo org/users exist before auth/UI reads the DB.
+ * Password hashes are set only when KEY2HR_DEMO_* env/secrets are present,
+ * and existing hashes are never overwritten.
  */
 export function ensureBootstrapped(): Promise<void> {
   if (!globalForBootstrap.key2hrBootstrapped) {

@@ -34,7 +34,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error }, { status: 401 });
   }
 
-  await setSessionCookie(result.user);
+  try {
+    await setSessionCookie(result.user);
+  } catch {
+    return NextResponse.json(
+      { error: "Server auth is not configured (AUTH_SECRET)." },
+      { status: 503 },
+    );
+  }
 
   return NextResponse.json({
     user: result.user,

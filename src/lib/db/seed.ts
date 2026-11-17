@@ -11,10 +11,10 @@ import {
   users,
 } from "./schema";
 
-export const DEMO_CREDENTIALS = [
+/** Demo personas (no passwords in source — set via env / Cursor secrets). */
+export const DEMO_USERS = [
   {
     username: "admin",
-    password: "DemoAdmin!",
     role: "admin" as const,
     staffNumber: "E1001",
     firstName: "Ava",
@@ -22,7 +22,6 @@ export const DEMO_CREDENTIALS = [
   },
   {
     username: "manager",
-    password: "DemoManager!",
     role: "manager" as const,
     staffNumber: "E2001",
     firstName: "Morgan",
@@ -30,7 +29,6 @@ export const DEMO_CREDENTIALS = [
   },
   {
     username: "staff",
-    password: "DemoStaff!",
     role: "staff" as const,
     staffNumber: "E3001",
     firstName: "Sam",
@@ -40,6 +38,18 @@ export const DEMO_CREDENTIALS = [
 
 function id(prefix: string, value: string): string {
   return `${prefix}_${value}`;
+}
+
+/**
+ * Password for a demo user comes only from environment (never hardcoded).
+ * Prefer role-specific `KEY2HR_DEMO_ADMIN_PASSWORD` (etc.), else shared
+ * `KEY2HR_DEMO_PASSWORD`. Hosted: set via Cursor app secrets.
+ */
+function demoPasswordFor(role: "admin" | "manager" | "staff"): string | null {
+  const specific = process.env[`KEY2HR_DEMO_${role.toUpperCase()}_PASSWORD`]?.trim();
+  if (specific) return specific;
+  const shared = process.env.KEY2HR_DEMO_PASSWORD?.trim();
+  return shared || null;
 }
 
 export async function seedDemoData(): Promise<void> {
@@ -83,7 +93,7 @@ export async function seedDemoData(): Promise<void> {
     })
     .onConflictDoNothing();
 
-  for (const demo of DEMO_CREDENTIALS) {
+  for (const demo of DEMO_USERS) {
     const employeeId = id("emp", demo.staffNumber);
     await db
       .insert(employees)
@@ -114,18 +124,17 @@ export async function seedDemoData(): Promise<void> {
       })
       .onConflictDoNothing();
 
-    const passwordHash = await hashPassword(demo.password);
     const existing = await db
-      .select({ id: users.id })
+      .select({ id: users.id, passwordHash: users.passwordHash })
       .from(users)
       .where(eq(users.username, demo.username))
       .limit(1);
 
+    // Never overwrite an existing password hash (owner may have changed it).
     if (existing[0]) {
       await db
         .update(users)
         .set({
-          passwordHash,
           role: demo.role,
           employeeId,
           provider: "local",
@@ -133,17 +142,21 @@ export async function seedDemoData(): Promise<void> {
           active: true,
         })
         .where(eq(users.id, existing[0].id));
-    } else {
-      await db.insert(users).values({
-        id: id("usr", demo.username),
-        username: demo.username,
-        passwordHash,
-        role: demo.role,
-        employeeId,
-        provider: "local",
-        providerSubject: `local:${demo.username}`,
-        active: true,
-      });
+      continue;
     }
+
+    const plain = demoPasswordFor(demo.role);
+    const passwordHash = plain ? await hashPassword(plain) : null;
+
+    await db.insert(users).values({
+      id: id("usr", demo.username),
+      username: demo.username,
+      passwordHash,
+      role: demo.role,
+      employeeId,
+      provider: "local",
+      providerSubject: `local:${demo.username}`,
+      active: true,
+    });
   }
 }
