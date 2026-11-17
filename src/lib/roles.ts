@@ -40,6 +40,7 @@ export function navigationForRole(role: Role): NavItem[] {
     case "admin":
       return [
         { href: "/admin", label: "Home" },
+        { href: "/admin/users", label: "Users" },
         { href: "/admin/personnel", label: "Personnel", placeholder: true },
         { href: "/admin/org", label: "Org structure", placeholder: true },
         { href: "/admin/workflows", label: "Workflows", placeholder: true },

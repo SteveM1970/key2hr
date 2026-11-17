@@ -27,6 +27,8 @@ Schema + demo org/users also bootstrap on first request. Demo **passwords** are 
 
 Demo usernames (when seeded): `admin`, `manager`, `staff`.
 
+Admins can create additional users at **Users** (`/admin/users`). An optional one-time bootstrap admin can be created from `KEY2HR_BOOTSTRAP_ADMIN_USERNAME` / `KEY2HR_BOOTSTRAP_ADMIN_PASSWORD` (never commit those values).
+
 ## Scripts
 
 | Command | Purpose |
