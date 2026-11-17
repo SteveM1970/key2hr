@@ -1,3 +1,4 @@
+import { ensureBootstrapAdmin } from "@/lib/users/bootstrap-admin";
 import { ensureSchema } from "./migrate";
 import { seedDemoData } from "./seed";
 
@@ -8,6 +9,7 @@ const globalForBootstrap = globalThis as unknown as {
 async function bootstrapOnce(): Promise<void> {
   await ensureSchema();
   await seedDemoData();
+  await ensureBootstrapAdmin();
 }
 
 /**

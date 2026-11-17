@@ -28,9 +28,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const role = await roleFromRequest(request);
   const isLogin = pathname === "/login";
-  const isAuthApi = pathname.startsWith("/api/auth/");
-
-  if (isAuthApi) {
+  // API routes enforce their own auth (JSON 401/403); do not HTML-redirect them.
+  if (pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
 
