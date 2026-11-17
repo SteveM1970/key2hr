@@ -6,11 +6,15 @@ const globalForBootstrap = globalThis as unknown as {
 };
 
 async function bootstrapOnce(): Promise<void> {
-  ensureSchema();
+  await ensureSchema();
   await seedDemoData();
 }
 
-/** Ensures schema + demo users exist before auth/UI reads the DB. */
+/**
+ * Ensures schema + demo users exist before auth/UI reads the DB.
+ * Runs on first request locally and on hosted cold starts so demo logins work
+ * even when only migrations (not seed) ran at build time.
+ */
 export function ensureBootstrapped(): Promise<void> {
   if (!globalForBootstrap.key2hrBootstrapped) {
     globalForBootstrap.key2hrBootstrapped = bootstrapOnce();

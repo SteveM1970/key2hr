@@ -34,10 +34,12 @@ yarn-error.log*
 .env*
 !.env.example
 
-# local sqlite
+# local sqlite / data dirs (legacy + any on-disk caches)
 /data
 *.sqlite
 *.sqlite-*
+*.pglite
+
 
 # vercel
 .vercel
