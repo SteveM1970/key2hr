@@ -3,19 +3,20 @@ import { jwtVerify } from "jose";
 import { canAccessPath, isRole, roleHomePath, type Role } from "@/lib/roles";
 import { SESSION_COOKIE } from "@/lib/auth/session";
 
-/** Demo/local fallback only. Hosted/production must set AUTH_SECRET via secrets. */
-function getSecret(): Uint8Array {
-  const secret =
-    process.env.AUTH_SECRET?.trim() ||
-    "key2hr-dev-secret-change-me-before-prod";
+/** No in-source fallback. Unset AUTH_SECRET means sessions cannot be verified. */
+function getSecret(): Uint8Array | null {
+  const secret = process.env.AUTH_SECRET?.trim();
+  if (!secret) return null;
   return new TextEncoder().encode(secret);
 }
 
 async function roleFromRequest(request: NextRequest): Promise<Role | null> {
+  const secret = getSecret();
+  if (!secret) return null;
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, getSecret());
+    const { payload } = await jwtVerify(token, secret);
     const role = typeof payload.role === "string" ? payload.role : "";
     return isRole(role) ? role : null;
   } catch {

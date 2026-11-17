@@ -7,11 +7,17 @@ export const SESSION_COOKIE = "key2hr_session";
 
 const SESSION_TTL_SECONDS = 60 * 60 * 12;
 
-/** Demo/local fallback only. Hosted/production must set AUTH_SECRET via secrets. */
-const DEV_AUTH_SECRET = "key2hr-dev-secret-change-me-before-prod";
-
+/**
+ * AUTH_SECRET must be set (local `.env.local` or Cursor app secrets).
+ * There is no in-source fallback — an unset secret cannot mint or verify sessions.
+ */
 function getSecret(): Uint8Array {
-  const secret = process.env.AUTH_SECRET?.trim() || DEV_AUTH_SECRET;
+  const secret = process.env.AUTH_SECRET?.trim();
+  if (!secret) {
+    throw new Error(
+      "AUTH_SECRET is not configured. Set it in the environment (or Cursor app secrets) before signing sessions.",
+    );
+  }
   return new TextEncoder().encode(secret);
 }
 
