@@ -7,9 +7,11 @@ export const SESSION_COOKIE = "key2hr_session";
 
 const SESSION_TTL_SECONDS = 60 * 60 * 12;
 
+/** Demo/local fallback only. Hosted/production must set AUTH_SECRET via secrets. */
+const DEV_AUTH_SECRET = "key2hr-dev-secret-change-me-before-prod";
+
 function getSecret(): Uint8Array {
-  const secret =
-    process.env.AUTH_SECRET ?? "key2hr-dev-secret-change-me-before-prod";
+  const secret = process.env.AUTH_SECRET?.trim() || DEV_AUTH_SECRET;
   return new TextEncoder().encode(secret);
 }
 

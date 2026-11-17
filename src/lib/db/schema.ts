@@ -1,36 +1,35 @@
 import { relations, sql } from "drizzle-orm";
 import {
-  integer,
-  sqliteTable,
+  boolean,
+  pgTable,
   text,
   uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 
 /**
  * Relational foundation for Key2HR.
  *
- * Local/dev uses SQLite via better-sqlite3. Schema types stay portable so the
- * same model can move to Postgres / Azure SQL for Power BI without rewriting
- * domain tables. Prefer standard columns (text ids, ISO timestamps, enums as
- * text) over SQLite-only features.
+ * Hosted (Cursor publish-app) uses Postgres when DATABASE_URL is set.
+ * Local/dev uses in-memory PGlite when DATABASE_URL is unset.
+ * Prefer standard columns (text ids, ISO timestamps as text, enums as text).
  */
 
-export const companies = sqliteTable(
+export const companies = pgTable(
   "companies",
   {
     id: text("id").primaryKey(),
     reference: text("reference").notNull(),
     name: text("name").notNull(),
-    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    active: boolean("active").notNull().default(true),
     createdAt: text("created_at")
       .notNull()
-      .default(sql`(datetime('now'))`),
+      .default(sql`(now()::text)`),
     disestablishedAt: text("disestablished_at"),
   },
   (table) => [uniqueIndex("companies_reference_uidx").on(table.reference)],
 );
 
-export const departments = sqliteTable(
+export const departments = pgTable(
   "departments",
   {
     id: text("id").primaryKey(),
@@ -39,16 +38,16 @@ export const departments = sqliteTable(
       .references(() => companies.id),
     reference: text("reference").notNull(),
     name: text("name").notNull(),
-    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    active: boolean("active").notNull().default(true),
     createdAt: text("created_at")
       .notNull()
-      .default(sql`(datetime('now'))`),
+      .default(sql`(now()::text)`),
     disestablishedAt: text("disestablished_at"),
   },
   (table) => [uniqueIndex("departments_reference_uidx").on(table.reference)],
 );
 
-export const subDepartments = sqliteTable(
+export const subDepartments = pgTable(
   "sub_departments",
   {
     id: text("id").primaryKey(),
@@ -57,10 +56,10 @@ export const subDepartments = sqliteTable(
       .references(() => departments.id),
     reference: text("reference").notNull(),
     name: text("name").notNull(),
-    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    active: boolean("active").notNull().default(true),
     createdAt: text("created_at")
       .notNull()
-      .default(sql`(datetime('now'))`),
+      .default(sql`(now()::text)`),
     disestablishedAt: text("disestablished_at"),
   },
   (table) => [
@@ -68,7 +67,7 @@ export const subDepartments = sqliteTable(
   ],
 );
 
-export const employees = sqliteTable(
+export const employees = pgTable(
   "employees",
   {
     id: text("id").primaryKey(),
@@ -82,10 +81,10 @@ export const employees = sqliteTable(
       () => subDepartments.id,
     ),
     managerEmployeeId: text("manager_employee_id"),
-    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    active: boolean("active").notNull().default(true),
     createdAt: text("created_at")
       .notNull()
-      .default(sql`(datetime('now'))`),
+      .default(sql`(now()::text)`),
   },
   (table) => [
     uniqueIndex("employees_staff_number_uidx").on(table.staffNumber),
@@ -97,7 +96,7 @@ export const employees = sqliteTable(
  * same employee without rewriting role or org tables.
  * provider: "local" now; later "entra" / "oidc".
  */
-export const users = sqliteTable(
+export const users = pgTable(
   "users",
   {
     id: text("id").primaryKey(),
@@ -107,10 +106,10 @@ export const users = sqliteTable(
     employeeId: text("employee_id").references(() => employees.id),
     provider: text("provider").notNull().default("local"),
     providerSubject: text("provider_subject"),
-    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    active: boolean("active").notNull().default(true),
     createdAt: text("created_at")
       .notNull()
-      .default(sql`(datetime('now'))`),
+      .default(sql`(now()::text)`),
   },
   (table) => [
     uniqueIndex("users_username_uidx").on(table.username),
@@ -122,7 +121,7 @@ export const users = sqliteTable(
 );
 
 /** Assignment history stub — personnel moves will append rows here later. */
-export const employeeAssignments = sqliteTable("employee_assignments", {
+export const employeeAssignments = pgTable("employee_assignments", {
   id: text("id").primaryKey(),
   employeeId: text("employee_id")
     .notNull()
@@ -137,7 +136,7 @@ export const employeeAssignments = sqliteTable("employee_assignments", {
   note: text("note"),
   createdAt: text("created_at")
     .notNull()
-    .default(sql`(datetime('now'))`),
+    .default(sql`(now()::text)`),
 });
 
 export const companiesRelations = relations(companies, ({ many }) => ({

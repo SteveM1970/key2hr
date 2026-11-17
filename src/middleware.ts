@@ -3,9 +3,11 @@ import { jwtVerify } from "jose";
 import { canAccessPath, isRole, roleHomePath, type Role } from "@/lib/roles";
 import { SESSION_COOKIE } from "@/lib/auth/session";
 
+/** Demo/local fallback only. Hosted/production must set AUTH_SECRET via secrets. */
 function getSecret(): Uint8Array {
   const secret =
-    process.env.AUTH_SECRET ?? "key2hr-dev-secret-change-me-before-prod";
+    process.env.AUTH_SECRET?.trim() ||
+    "key2hr-dev-secret-change-me-before-prod";
   return new TextEncoder().encode(secret);
 }
 

@@ -10,11 +10,11 @@ export const localAuthProvider: AuthProvider = {
   id: "local",
 
   async authenticate(credentials: Credentials): Promise<AuthResult> {
-    ensureSchema();
-    const db = getDb();
+    await ensureSchema();
+    const db = await getDb();
     const username = credentials.username.trim().toLowerCase();
 
-    const row = db
+    const rows = await db
       .select({
         id: users.id,
         username: users.username,
@@ -29,7 +29,9 @@ export const localAuthProvider: AuthProvider = {
       .from(users)
       .leftJoin(employees, eq(users.employeeId, employees.id))
       .where(eq(users.username, username))
-      .get();
+      .limit(1);
+
+    const row = rows[0];
 
     if (!row || !row.active) {
       return { ok: false, error: "Invalid username or password." };

@@ -43,25 +43,26 @@ function id(prefix: string, value: string): string {
 }
 
 export async function seedDemoData(): Promise<void> {
-  ensureSchema();
-  const db = getDb();
+  await ensureSchema();
+  const db = await getDb();
 
   const companyId = id("co", "demo");
   const deptId = id("dept", "people");
   const subDeptId = id("sub", "ops");
   const managerEmployeeId = id("emp", "E2001");
 
-  db.insert(companies)
+  await db
+    .insert(companies)
     .values({
       id: companyId,
       reference: "CO-DEMO",
       name: "Key2HR Demo Company",
       active: true,
     })
-    .onConflictDoNothing()
-    .run();
+    .onConflictDoNothing();
 
-  db.insert(departments)
+  await db
+    .insert(departments)
     .values({
       id: deptId,
       companyId,
@@ -69,10 +70,10 @@ export async function seedDemoData(): Promise<void> {
       name: "People Operations",
       active: true,
     })
-    .onConflictDoNothing()
-    .run();
+    .onConflictDoNothing();
 
-  db.insert(subDepartments)
+  await db
+    .insert(subDepartments)
     .values({
       id: subDeptId,
       departmentId: deptId,
@@ -80,12 +81,12 @@ export async function seedDemoData(): Promise<void> {
       name: "Operations",
       active: true,
     })
-    .onConflictDoNothing()
-    .run();
+    .onConflictDoNothing();
 
   for (const demo of DEMO_CREDENTIALS) {
     const employeeId = id("emp", demo.staffNumber);
-    db.insert(employees)
+    await db
+      .insert(employees)
       .values({
         id: employeeId,
         staffNumber: demo.staffNumber,
@@ -95,14 +96,13 @@ export async function seedDemoData(): Promise<void> {
         companyId,
         departmentId: deptId,
         subDepartmentId: subDeptId,
-        managerEmployeeId:
-          demo.role === "staff" ? managerEmployeeId : null,
+        managerEmployeeId: demo.role === "staff" ? managerEmployeeId : null,
         active: true,
       })
-      .onConflictDoNothing()
-      .run();
+      .onConflictDoNothing();
 
-    db.insert(employeeAssignments)
+    await db
+      .insert(employeeAssignments)
       .values({
         id: id("asg", demo.staffNumber),
         employeeId,
@@ -112,18 +112,18 @@ export async function seedDemoData(): Promise<void> {
         effectiveFrom: "2026-01-01",
         note: "Initial demo assignment",
       })
-      .onConflictDoNothing()
-      .run();
+      .onConflictDoNothing();
 
     const passwordHash = await hashPassword(demo.password);
-    const existing = db
+    const existing = await db
       .select({ id: users.id })
       .from(users)
       .where(eq(users.username, demo.username))
-      .get();
+      .limit(1);
 
-    if (existing) {
-      db.update(users)
+    if (existing[0]) {
+      await db
+        .update(users)
         .set({
           passwordHash,
           role: demo.role,
@@ -132,21 +132,18 @@ export async function seedDemoData(): Promise<void> {
           providerSubject: `local:${demo.username}`,
           active: true,
         })
-        .where(eq(users.id, existing.id))
-        .run();
+        .where(eq(users.id, existing[0].id));
     } else {
-      db.insert(users)
-        .values({
-          id: id("usr", demo.username),
-          username: demo.username,
-          passwordHash,
-          role: demo.role,
-          employeeId,
-          provider: "local",
-          providerSubject: `local:${demo.username}`,
-          active: true,
-        })
-        .run();
+      await db.insert(users).values({
+        id: id("usr", demo.username),
+        username: demo.username,
+        passwordHash,
+        role: demo.role,
+        employeeId,
+        provider: "local",
+        providerSubject: `local:${demo.username}`,
+        active: true,
+      });
     }
   }
 }
